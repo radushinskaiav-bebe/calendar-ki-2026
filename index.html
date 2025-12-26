@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Календарь мероприятий — КИ/инклюзия (Янв–Фев 2026)</title>
+  <style>
+    :root{
+      --bg:#0b0c10;
+      --card: rgba(255,255,255,.06);
+      --card2: rgba(255,255,255,.04);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.64);
+      --line: rgba(255,255,255,.12);
+      --accent:#7cddff;
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:
+        radial-gradient(1200px 700px at 20% 10%, rgba(124,221,255,.12), transparent 60%),
+        radial-gradient(900px 600px at 80% 30%, rgba(182,255,179,.10), transparent 55%),
+        var(--bg);
+      color: var(--text);
+    }
+    header{
+      padding: 28px 18px 18px;
+      border-bottom: 1px solid var(--line);
+      position: sticky; top:0; z-index: 20;
+      backdrop-filter: blur(10px);
+      background: rgba(11,12,16,.65);
+    }
+    .wrap{ max-width: 1080px; margin: 0 auto; }
+    h1{ margin:0 0 10px; font-size:18px; font-weight:700; }
+    .sub{ margin:0 0 14px; color: var(--muted); font-size:13px; line-height:1.4; }
+    .controls{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+    .chip, select, input{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 9px 12px;
+      font-size: 13px;
+      outline:none;
+    }
+    input{ border-radius: 12px; flex: 1 1 280px; padding: 10px 12px; }
+
+    /* fix select dropdown (цвет текста в выпадающемся списке) */
+    select option{
+      color: #000;
+      background: #fff;
+    }
+    /* небольшая страховка для некоторых браузеров */
+    select{
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .chip{ cursor:pointer; user-select:none; transition: transform .08s ease, background .15s ease, border-color .15s ease; }
+    .chip:hover{ transform: translateY(-1px); }
+    .chip.active{ border-color: rgba(124,221,255,.55); background: rgba(124,221,255,.10); }
+
+    main{ padding: 18px 18px 40px; }
+    .month{ margin: 18px 0 28px; }
+    .month-title{ display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin: 0 0 10px; }
+    .month-title h2{ margin:0; font-size:15px; letter-spacing:.6px; text-transform: uppercase; }
+    .count{ color: var(--muted); font-size: 12px; }
+
+    .grid{ display:grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
+
+    .card{
+      grid-column: span 12;
+      background: linear-gradient(180deg, var(--card), var(--card2));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display:flex;
+      flex-direction: column;
+      min-height: 220px;
+    }
+    @media (min-width: 760px){ .card{ grid-column: span 6; } }
+    @media (min-width: 1020px){ .card{ grid-column: span 4; } }
+
+    .thumb{
+      height: 120px;
+      border-bottom: 1px solid var(--line);
+      background:
+        radial-gradient(650px 240px at 30% 20%, rgba(124,221,255,.22), transparent 55%),
+        radial-gradient(520px 220px at 80% 60%, rgba(182,255,179,.14), transparent 55%),
+        rgba(255,255,255,.03);
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      padding: 10px 12px;
+    }
+    .thumb img{
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      display:block;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.28);
+      font-size: 12px;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .content{ padding: 12px 14px 12px; display:flex; flex-direction: column; gap: 8px; }
+    .name{ font-weight: 700; font-size: 14px; line-height: 1.25; margin: 0; }
+    .meta{ display:flex; flex-wrap:wrap; gap:8px; color: var(--muted); font-size: 12px; margin: 0; }
+    .tags{ display:flex; flex-wrap:wrap; gap:8px; margin-top: 2px; }
+    .tag{
+      display:inline-flex; align-items:center; gap:6px;
+      padding: 6px 10px; border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      font-size: 12px; color: var(--text);
+      white-space: nowrap;
+    }
+    .tag.creative{ border-color: rgba(124,221,255,.35); }
+    .tag.inclusive{ border-color: rgba(182,255,179,.35); }
+    .tag.media{ border-color: rgba(255,210,138,.35); }
+
+    .note{ margin:0; color: rgba(255,255,255,.78); font-size: 13px; line-height: 1.4; }
+    .links{ margin-top:auto; padding-top: 6px; display:flex; flex-wrap:wrap; gap:10px; }
+    a{ color: var(--accent); text-decoration: none; border-bottom: 1px dashed rgba(124,221,255,.35); }
+    a:hover{ border-bottom-color: rgba(124,221,255,.75); }
+
+    .empty{
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 14px;
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+    }
+    footer{
+      padding: 22px 18px 30px;
+      color: var(--muted);
+      font-size: 12px;
+      border-top: 1px solid var(--line);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Календарь мероприятий (Январь–Февраль 2026)</h1>
+      <p class="sub">Креативные и социокреативные/инклюзивные события.</p>
+
+      <div class="controls">
+        <input id="q" placeholder="Поиск: название / город / примечания…" />
+        <select id="country">
+          <option value="">Все страны</option>
+        </select>
+        <div class="chip" data-type="creative">🎨 КИ</div>
+        <div class="chip" data-type="inclusive">♿ Инклюзия</div>
+        <div class="chip" data-type="media">🎬/📺 Медиа</div>
+        <div class="chip" data-type="reset">Сброс</div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap" id="app"></div>
+  </main>
+
+  <script>
+    // Данные из твоей таблицы (январь/февраль).
+    const events = [
+      {
+        month: "Январь 2026",
+        dates: "15–19 января 2026",
+        name: "Jaipur Literature Festival 2026",
+        place: "Джайпур, Индия",
+        country: "Индия",
+        types: ["creative"],
+        notes: "Крупнейший литературный фестиваль: лауреаты Нобелевской и Букеровской премий, философы, политики и креативные лидеры. Фокус — литература и идеи в современном мире.",
+        url: "https://www.jaipurliteraturefestival.org/?ref=tradefest.io&utm_campaign=tradefest.io&utm_source=tradefest.io&utm_medium=tradefest.io",
+        image: "images/jaipur.webp"
+      },
+      {
+        month: "Январь 2026",
+        dates: "22–31 января 2026",
+        name: "Singapore Art Week 2026",
+        place: "Сингапур",
+        country: "Сингапур",
+        types: ["creative","inclusive"],
+        notes: "Флагманское событие визуального искусства: ART SG, выставки, 130+ паблик-арт проектов. Есть экспертные панели (арт-рынок, NFT/ИИ, культурное предпринимательство) и социокреативные инициативы по доступности искусства.",
+        url: "https://www.artweek.sg/",
+        image: "images/singaporeartweek.jpeg"
+      },
+      {
+        month: "Январь 2026",
+        dates: "23 января – 8 февраля 2026",
+        name: "VI выставка-форум «Уникальная Россия»",
+        place: "Москва, Гостиный двор",
+        country: "Россия",
+        types: ["creative","inclusive"],
+        notes: "Дни Индии/Шри-Ланки/Индонезии/Бангладеша; форум предпринимателей Россия–Евразия; конференции и награждения (в т.ч. конкурс «Уникальные мастера России»).",
+        url: "https://промыслы.рус/",
+        image: "images/uniquerussia.jpg"
+      },
+      {
+        month: "Январь 2026",
+        dates: "24 января 2026",
+        name: "Первый медиафорум «Мода в России»",
+        place: "Москва, Quattro Space",
+        country: "Россия",
+        types: ["creative","media"],
+        notes: "Развитие и продвижение локальных брендов в медиасреде; связка федеральных/региональных медиа и индустрии моды. В финале — дефиле и награждение финалистов конкурса.",
+        url: "https://modavrf.ru/",
+        image: "images/modavrf.png"
+      },
+      {
+        month: "Январь 2026",
+        dates: "29 января – 8 февраля 2026",
+        name: "Bangkok Design Week 2026 (BKKDW2026)",
+        place: "Бангкок",
+        country: "Таиланд",
+        types: ["creative","inclusive"],
+        notes: "Фестиваль дизайна и инноваций: 15+ районов, 2000+ творческих предпринимателей; деловая программа, воркшопы, нетворкинг. Акцент — урбанистический дизайн для устойчивого будущего, инклюзивная среда и технологии.",
+        url: "https://www.bangkokdesignweek.com/en/bkkdw2026",
+        image: "images/bkkdw.png"
+      },
+
+      {
+        month: "Февраль 2026",
+        dates: "1–6 февраля 2026",
+        name: "Dubai Fashion Week AW26/27",
+        place: "Дубай, ОАЭ",
+        country: "ОАЭ",
+        types: ["creative"],
+        notes: "Модная платформа Ближнего Востока: показы + деловая программа (цифровая трансформация ритейла, устойчивость, ИИ в моде).",
+        url: "https://dubaifashionweek.org/",
+        image: "images/dubaifashionweek.png"
+      },
+      {
+        month: "Февраль 2026",
+        dates: "3–6 февраля 2026",
+        name: "Downtown Design Riyadh 2026",
+        place: "Эр-Рияд, Саудовская Аравия",
+        country: "Саудовская Аравия",
+        types: ["creative"],
+        notes: "Выставка-форум для профессионалов (архитекторы/дизайнеры/девелоперы): инновации интерьерного дизайна, мебели и градостроительства.",
+        url: "https://www.downtowndesign.com/riyadh",
+        image: "images/downtown.png"
+      },
+      {
+        month: "Февраль 2026",
+        dates: "5–8 февраля 2026",
+        name: "India Art Fair 2026",
+        place: "Нью-Дели, Индия",
+        country: "Индия",
+        types: ["creative"],
+        notes: "Крупнейшая ярмарка современного искусства региона. Публичная программа/токи/панели обычно насыщенная (в файле отмечено: программа ещё не опубликована).",
+        url: "https://indiaartfair.in/",
+        image: "images/artfairindia.webp"
+      },
+      {
+        month: "Февраль 2026",
+        dates: "16–17 февраля 2026",
+        name: "Africa Business Forum 2026 (UN / Indico)",
+        place: "Аддис-Абеба, Эфиопия",
+        country: "Эфиопия",
+        types: ["creative","inclusive"],
+        notes: "Площадка для партнёрств и инвестиций. Тема: «Финансирование будущего Африки: рабочие места, инновации и креативный капитал».",
+        url: "https://indico.un.org/event/1021548/overview",
+        image: "images/africabusinessforum.png"
+      },
+      {
+        month: "Февраль 2026",
+        dates: "17–18 февраля 2026",
+        name: "CSTB.PRO.MEDIA 2026 (Международная выставка и форум медиаиндустрии)",
+        place: "Москва, Россия",
+        country: "Россия",
+        types: ["media"],
+        notes: "Форум в формате «бизнес-клуба» (Loft Hall): производство/права/доставка/монетизация контента. Фокус 2026: импортозамещение, ИИ для генерации и рекомендаций, новые форматы взаимодействия платформ и телеканалов.",
+        url: "https://www.cstb.ru/",
+        image: "images/cstbpromedia.png"
+      }
+    ];
+
+    const app = document.getElementById('app');
+    const q = document.getElementById('q');
+    const country = document.getElementById('country');
+    const chips = Array.from(document.querySelectorAll('.chip'));
+    let activeTypes = new Set();
+
+    function uniq(arr){ return Array.from(new Set(arr)).sort((a,b)=>a.localeCompare(b,'ru')); }
+
+    function buildCountrySelect(){
+      const countries = uniq(events.map(e => e.country).filter(Boolean));
+      for(const c of countries){
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = c;
+        country.appendChild(opt);
+      }
+    }
+
+    function matches(e){
+      const text = (e.name + " " + e.place + " " + (e.notes||"")).toLowerCase();
+      const qv = (q.value || "").trim().toLowerCase();
+      const cv = country.value || "";
+
+      if(qv && !text.includes(qv)) return false;
+      if(cv && e.country !== cv) return false;
+
+      if(activeTypes.size){
+        for(const t of activeTypes){
+          if(!(e.types||[]).includes(t)) return false;
+        }
+      }
+      return true;
+    }
+
+    function groupByMonth(list){
+      const map = new Map();
+      for(const e of list){
+        if(!map.has(e.month)) map.set(e.month, []);
+        map.get(e.month).push(e);
+      }
+      return map;
+    }
+
+    function tagLabel(t){
+      if(t==='creative') return '🎨 креативные индустрии';
+      if(t==='inclusive') return '♿ инклюзия';
+      if(t==='media') return '🎬/📺 медиа';
+      return t;
+    }
+    function tagClass(t){
+      if(t==='creative') return 'creative';
+      if(t==='inclusive') return 'inclusive';
+      if(t==='media') return 'media';
+      return '';
+    }
+
+    function safeAbbr(name){
+      const words = (name||"").replace(/[()«»"”“]/g,'').split(/\s+/).filter(Boolean);
+      const take = words.slice(0,3).map(w => w[0]?.toUpperCase()).join('');
+      return take || 'EVT';
+    }
+
+    function render(){
+      const filtered = events.filter(matches);
+
+      if(!filtered.length){
+        app.innerHTML = `<div class="empty">Ничего не найдено.</div>`;
+        return;
+      }
+
+      const byMonth = groupByMonth(filtered);
+      const monthOrder = [];
+      for(const e of events){
+        if(!monthOrder.includes(e.month)) monthOrder.push(e.month);
+      }
+
+      let html = "";
+      for(const m of monthOrder){
+        if(!byMonth.has(m)) continue;
+        const list = byMonth.get(m);
+
+        html += `
+          <section class="month">
+            <div class="month-title">
+              <h2>${m}</h2>
+              <div class="count">${list.length} событ.</div>
+            </div>
+            <div class="grid">
+        `;
+
+        for(const e of list){
+          const tags = (e.types||[]).map(t => `<span class="tag ${tagClass(t)}">${tagLabel(t)}</span>`).join(" ");
+
+          const thumb = e.image
+            ? `<img src="${e.image}" alt="${e.name}" loading="lazy" onerror="this.closest('.card').querySelector('.thumb').innerHTML = '<div class=badge>${safeAbbr(e.name)}</div>'">`
+            : `<div class="badge">${safeAbbr(e.name)}</div>`;
+
+          html += `
+            <article class="card">
+              <div class="thumb">${thumb}</div>
+              <div class="content">
+                <p class="name">${e.name}</p>
+                <p class="meta">
+                  <span>📅 ${e.dates}</span>
+                  <span>📍 ${e.place}</span>
+                </p>
+                <div class="tags">${tags}</div>
+                ${e.notes ? `<p class="note">${e.notes}</p>` : ``}
+                <div class="links">
+                  ${e.url ? `<a href="${e.url}" target="_blank" rel="noopener">Сайт</a>` : ``}
+                </div>
+              </div>
+            </article>
+          `;
+        }
+
+        html += `</div></section>`;
+      }
+
+      app.innerHTML = html;
+    }
+
+    chips.forEach(ch => {
+      ch.addEventListener('click', () => {
+        const t = ch.dataset.type;
+        if(t === 'reset'){
+          activeTypes.clear();
+          chips.forEach(x => x.classList.remove('active'));
+          q.value = "";
+          country.value = "";
+          render();
+          return;
+        }
+        if(activeTypes.has(t)){
+          activeTypes.delete(t);
+          ch.classList.remove('active');
+        } else {
+          activeTypes.add(t);
+          ch.classList.add('active');
+        }
+        render();
+      });
+    });
+
+    q.addEventListener('input', render);
+    country.addEventListener('change', render);
+
+    buildCountrySelect();
+    render();
+  </script>
+</body>
+</html>
